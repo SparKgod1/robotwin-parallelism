@@ -1,176 +1,372 @@
-<h1 align="center">
-  <a href="https://robotwin-benchmark.github.io"><b>RoboTwin</b> Bimanual Robotic Manipulation Platform<br></a>
-</h1>
-<h2 align="center">Lastest Version: RoboTwin 2.0<br>🤲 <a href="https://robotwin-platform.github.io/">Webpage</a> | <a href="https://robotwin-platform.github.io/doc/">Document</a> | <a href="https://arxiv.org/abs/2506.18088">Paper</a> | <a href="https://robotwin-platform.github.io/doc/community/index.html">Community</a> | <a href="https://robotwin-platform.github.io/leaderboard">Leaderboard</a></h2>
+# RoboTwin Parallel Data Collection
 
-https://private-user-images.githubusercontent.com/88101805/463126988-e3ba1575-4411-4a36-ad65-f0b2f49890c3.mp4
+Multi-machine, multi-GPU parallel data collection infrastructure for [RoboTwin](https://github.com/RoboTwin-Platform/RoboTwin). Designed for large-scale episode generation across 20+ machines with 8 GPUs each.
 
-**[2.0 Version (lastest)]** RoboTwin 2.0: A Scalable Data Generator and Benchmark with Strong Domain Randomization for Robust Bimanual Robotic Manipulation<br>
-<i>Under Review 2025</i>: [Webpage](https://robotwin-platform.github.io/) | [Document](https://robotwin-platform.github.io/doc) | [PDF](https://arxiv.org/pdf/2506.18088) | [arXiv](https://arxiv.org/abs/2506.18088) | [Talk (in Chinese)](https://www.bilibili.com/video/BV18p3izYE63/?spm_id_from=333.337.search-card.all.click) | [机器之心](https://mp.weixin.qq.com/s/SwORezmol2Qd9YdrGYchEA) | [Leaderboard](https://robotwin-platform.github.io/leaderboard)<br>
-> <a href="https://tianxingchen.github.io/">Tianxing Chen</a><sup>\*</sup>, Zanxin Chen<sup>\*</sup>, Baijun Chen<sup>\*</sup>, Zijian Cai<sup>\*</sup>, <a href="https://10-oasis-01.github.io">Yibin Liu</a><sup>\*</sup>, <a href="https://kolakivy.github.io/">Qiwei Liang</a>, Zixuan Li, Xianliang Lin, <a href="https://geyiheng.github.io">Yiheng Ge</a>, Zhenyu Gu, Weiliang Deng, Yubin Guo, Tian Nian, Xuanbing Xie, <a href="https://www.linkedin.com/in/yusen-qin-5b23345b/">Qiangyu Chen</a>, Kailun Su, Tianling Xu, <a href="http://luoping.me/">Guodong Liu</a>, <a href="https://aaron617.github.io/">Mengkang Hu</a>, <a href="https://c7w.tech/about">Huan-ang Gao</a>, Kaixuan Wang, <a href="https://liang-zx.github.io/">Zhixuan Liang</a>, <a href="https://www.linkedin.com/in/yusen-qin-5b23345b/">Yusen Qin</a>, Xiaokang Yang, <a href="http://luoping.me/">Ping Luo</a><sup>†</sup>, <a href="https://yaomarkmu.github.io/">Yao Mu</a><sup>†</sup>
+## Architecture
 
-**[RoboTwin Dual-Arm Collaboration Challenge@CVPR'25 MEIS Workshop]** RoboTwin Dual-Arm Collaboration Challenge Technical Report at CVPR 2025 MEIS Workshop<br>
-Official Technical Report: [PDF](https://arxiv.org/pdf/2506.23351) | [arXiv](https://arxiv.org/abs/2506.23351) | [量子位](https://mp.weixin.qq.com/s/qxqs9vvvHsAJ-0hoYANYzQ)<br>
+The pipeline has two phases:
 
-**[1.0 Version]** RoboTwin: Dual-Arm Robot Benchmark with Generative Digital Twins<br>
-Accepted to <i style="color: red; display: inline;"><b>CVPR 2025 (Highlight)</b></i>: [PDF](https://arxiv.org/pdf/2504.13059) | [arXiv](https://arxiv.org/abs/2504.13059)<br>
-> <a href="https://yaomarkmu.github.io/">Yao Mu</a><sup>* †</sup>, <a href="https://tianxingchen.github.io">Tianxing Chen</a><sup>* </sup>, Zanxin Chen<sup>* </sup>, <a href="https://shijiapeng03.github.io">Shijia Peng</a><sup>* </sup>, Zhiqian Lan, Zeyu Gao, Zhixuan Liang, Qiaojun Yu, Yude Zou, Mingkun Xu, Lunkai Lin, Zhiqiang Xie, Mingyu Ding, <a href="http://luoping.me/">Ping Luo</a><sup>†</sup>.
+1. **Phase 1 (Seed Collection)** — Each machine runs a subset of tasks, collecting valid seeds through simulation. Multiple workers per GPU explore different seed ranges in parallel.
 
-**[Early Version]** RoboTwin: Dual-Arm Robot Benchmark with Generative Digital Twins (early version)<br>
-Accepted to <i style="color: red; display: inline;"><b>ECCV Workshop 2024 (Best Paper Award)</b></i>: [PDF](https://arxiv.org/pdf/2409.02920) | [arXiv](https://arxiv.org/abs/2409.02920)<br>
-> <a href="https://yaomarkmu.github.io/">Yao Mu</a><sup>* †</sup>, <a href="https://tianxingchen.github.io">Tianxing Chen</a><sup>* </sup>, Shijia Peng<sup>*</sup>, Zanxin Chen<sup>*</sup>, Zeyu Gao, Zhiqian Lan, Yude Zou, Lunkai Lin, Zhiqiang Xie, <a href="http://luoping.me/">Ping Luo</a><sup>†</sup>.
-
-
-
-# 📚 Overview
-
-| Branch Name | Link |
-|-------------|------|
-| 2.0 Version Branch | [main](https://github.com/RoboTwin-Platform/RoboTwin/tree/main) (latest) |
-| IsaacLab-Arena Branch | [IsaacLab-Arena](https://github.com/RoboTwin-Platform/RoboTwin/tree/IsaacLab-Arena) |
-| RLinf Branch | [RLinf_support](https://github.com/RoboTwin-Platform/RoboTwin/tree/RLinf_support) |
-| WBCD 2026 Branch | [WBCD-2026](https://github.com/RoboTwin-Platform/RoboTwin/tree/WBCD-2026) |
-| 1.0 Version Branch | [1.0 Version](https://github.com/RoboTwin-Platform/RoboTwin/tree/RoboTwin-1.0) |
-| 1.0 Version Code Generation Branch | [1.0 Version GPT](https://github.com/RoboTwin-Platform/RoboTwin/tree/gpt) |
-| Early Version Branch | [Early Version](https://github.com/RoboTwin-Platform/RoboTwin/tree/early_version) |
-| 第十九届“挑战杯”人工智能专项赛分支 | [Challenge-Cup-2025](https://github.com/RoboTwin-Platform/RoboTwin/tree/Challenge-Cup-2025) |
-| CVPR 2025 Challenge Round 1 Branch | [CVPR-Challenge-2025-Round1](https://github.com/RoboTwin-Platform/RoboTwin/tree/CVPR-Challenge-2025-Round1) |
-| CVPR 2025 Challenge Round 2 Branch | [CVPR-Challenge-2025-Round2](https://github.com/RoboTwin-Platform/RoboTwin/tree/CVPR-Challenge-2025-Round2) |
-
-
-
-# 🐣 Update
-* **2026/03/03**, We release [RMBench](https://github.com/RoboTwin-Platform/RMBench), which is a memory-dependent manipulation benchmark built upon RoboTwin 2.0.
-* **2026/02/20**, Usage supported in <a href="https://github.com/starVLA/starVLA">StarVLA</a>, which is a user-friendly codebase for VLA development.
-* **2026/01/23**, We update IsaacLab-Arena and <a href="https://github.com/RLinf/RLinf">RLinf</a> support (contributed by RLinf team).
-* **2025/08/28**, We update the RoboTwin 2.0 Paper [PDF](https://arxiv.org/pdf/2506.18088).
-* **2025/08/25**, We fix ACT deployment code and update the [leaderboard](https://robotwin-platform.github.io/leaderboard).
-* **2025/08/06**, We release RoboTwin 2.0 Leaderboard: [leaderboard website](https://robotwin-platform.github.io/leaderboard).
-* **2025/07/23**, RoboTwin 2.0 received Outstanding Poster at ChinaSI 2025 (Ranking 1st).
-* **2025/07/19**, We Fix DP3 evaluation code error. We will update RoboTwin 2.0 paper next week.
-* **2025/07/09**, We update endpose control mode, please see [[RoboTwin Doc - Usage - Control Robot](https://robotwin-platform.github.io/doc/usage/control-robot.html)] for more details.
-* **2025/07/08**, We upload [Challenge-Cup-2025](https://github.com/RoboTwin-Platform/RoboTwin/tree/Challenge-Cup-2025) Branch (第十九届挑战杯分支).
-* **2025/07/02**, Fix Piper Wrist Bug [[issue](https://github.com/RoboTwin-Platform/RoboTwin/issues/104)]. Please redownload the embodiment asset.
-* **2025/07/01**, We release Technical Report of RoboTwin Dual-Arm Collaboration Challenge @ CVPR 2025 MEIS Workshop [[arXiv](https://arxiv.org/abs/2506.23351)] !
-* **2025/06/21**, We release RoboTwin 2.0 [[Webpage](https://robotwin-platform.github.io/)] !
-* **2025/04/11**, RoboTwin is seclected as <i>CVPR Highlight paper</i>!
-* **2025/02/27**, RoboTwin is accepted to <i>CVPR 2025</i> ! 
-* **2024/09/30**, RoboTwin (Early Version) received <i>the Best Paper Award  at the ECCV Workshop</i>!
-* **2024/09/20**, Officially released RoboTwin.
-
-# 🛠️ Installation
-
-See [RoboTwin 2.0 Document (Usage - Install & Download)](https://robotwin-platform.github.io/doc/usage/robotwin-install.html) for installation instructions. It takes about 20 minutes for installation.
-
-# 🤷‍♂️ Tasks Informations
-See [RoboTwin 2.0 Tasks Doc](https://robotwin-platform.github.io/doc/tasks/index.html) for more details.
-
-<p align="center">
-  <img src="./assets/files/50_tasks.gif" width="100%">
-</p>
-
-# 🧑🏻‍💻 Usage 
-
-## Document
-
-> Please Refer to [RoboTwin 2.0 Document (Usage)](https://robotwin-platform.github.io/doc/usage/index.html) for more details.
-
-## Data Collection
-We provide over 100,000 pre-collected trajectories as part of the open-source release [RoboTwin Dataset](https://huggingface.co/datasets/TianxingChen/RoboTwin2.0/tree/main/dataset).
-However, we strongly recommend users to perform data collection themselves due to the high configurability and diversity of task and embodiment setups.
-
-<img src="./assets/files/domain_randomization.png" alt="description" style="display: block; margin: auto; width: 100%;">
-
-## 1. Task Running and Data Collection
-Running the following command will first search for a random seed for the target collection quantity, and then replay the seed to collect data.
+2. **Phase 2 (Rendering)** — A shared queue distributes episode batches across all machines dynamically. Workers claim batches via `fcntl.flock`, render episodes, and mark them done. This provides automatic load balancing — faster machines simply claim more work.
 
 ```
-bash collect_data.sh ${task_name} ${task_config} ${gpu_id}
-# Example: bash collect_data.sh beat_block_hammer demo_randomized 0
+┌─────────────────────────────────────────────────────────┐
+│                    Shared Storage (NFS/Lustre)           │
+│  save_path/                                             │
+│  ├── _queue/          # Phase 2 task queues (JSON)      │
+│  ├── _barrier/        # Cross-node synchronization      │
+│  ├── _logs/           # Per-node logs                   │
+│  └── <task_name>/<config>/                              │
+│      ├── seed.txt           # Valid seeds               │
+│      ├── _traj_data/        # Phase 1 trajectories      │
+│      ├── data/              # episode*.hdf5             │
+│      ├── video/             # episode*.mp4              │
+│      ├── _scene_info/       # Per-episode JSON          │
+│      └── instructions/      # Generated text            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## 2. Modify Task Config
-☝️ See [RoboTwin 2.0 Tasks Configurations Doc](https://robotwin-platform.github.io/doc/usage/configurations.html) for more details.
+## Quick Start
 
-# 🚴‍♂️ Policy Baselines
-## Policies Support
-[DP](https://robotwin-platform.github.io/doc/usage/DP.html), [ACT](https://robotwin-platform.github.io/doc/usage/ACT.html), [DP3](https://robotwin-platform.github.io/doc/usage/DP3.html), [RDT](https://robotwin-platform.github.io/doc/usage/RDT.html), [PI0](https://robotwin-platform.github.io/doc/usage/Pi0.html), [OpenVLA-oft](https://robotwin-platform.github.io/doc/usage/OpenVLA-oft.html)
+### Full Pipeline (All Phases)
 
-[TinyVLA](https://robotwin-platform.github.io/doc/usage/TinyVLA.html), [DexVLA](https://robotwin-platform.github.io/doc/usage/DexVLA.html) (Contributed by Media Group)
+Run the same command on every node — differentiate by `RANK`:
 
-[LLaVA-VLA](https://robotwin-platform.github.io/doc/usage/LLaVA-VLA.html) (Contributed by IRPN Lab, HKUST(GZ))
-
-[GO-1](https://robotwin-platform.github.io/doc/usage/GO1.html) (Contributed by GO-1 Team)
-
-Deploy Your Policy: [Guidance](https://robotwin-platform.github.io/doc/usage/deploy-your-policy.html)
-
-⏰ TODO: G3Flow, HybridVLA, SmolVLA, AVR, UniVLA
-
-# 🏄‍♂️ Experiment & LeaderBoard
-
-> We recommend that the RoboTwin Platform can be used to explore the following topics: 
-> 1. single - task fine - tuning capability
-> 2. visual robustness
-> 3. language diversity robustness (language condition)
-> 4. multi-tasks capability
-> 5. cross-embodiment performance
-
-The full leaderboard and setting can be found in: [https://robotwin-platform.github.io/leaderboard](https://robotwin-platform.github.io/leaderboard).
-
-# 💽 Pre-collected Large-scale Dataset
-
-Please refer to [RoboTwin 2.0 Dataset - Huggingface](https://huggingface.co/datasets/TianxingChen/RoboTwin2.0/tree/main/dataset).
-
-# 👍 Citations
-If you find our work useful, please consider citing:
-
-<b>RoboTwin 2.0</b>: A Scalable Data Generator and Benchmark with Strong Domain Randomization for Robust Bimanual Robotic Manipulation
-```
-@article{chen2025robotwin,
-  title={Robotwin 2.0: A scalable data generator and benchmark with strong domain randomization for robust bimanual robotic manipulation},
-  author={Chen, Tianxing and Chen, Zanxin and Chen, Baijun and Cai, Zijian and Liu, Yibin and Li, Zixuan and Liang, Qiwei and Lin, Xianliang and Ge, Yiheng and Gu, Zhenyu and others},
-  journal={arXiv preprint arXiv:2506.18088},
-  year={2025}
-}
+```bash
+# On each machine (RANK=0..19):
+RANK=0 bash multi_proc_scripts/launch_all.sh
 ```
 
-<b>RoboTwin</b>: Dual-Arm Robot Benchmark with Generative Digital Twins, accepted to <i style="color: red; display: inline;"><b>CVPR 2025 (Highlight)</b></i>
-```
-@InProceedings{Mu_2025_CVPR,
-    author    = {Mu, Yao and Chen, Tianxing and Chen, Zanxin and Peng, Shijia and Lan, Zhiqian and Gao, Zeyu and Liang, Zhixuan and Yu, Qiaojun and Zou, Yude and Xu, Mingkun and Lin, Lunkai and Xie, Zhiqiang and Ding, Mingyu and Luo, Ping},
-    title     = {RoboTwin: Dual-Arm Robot Benchmark with Generative Digital Twins},
-    booktitle = {Proceedings of the Computer Vision and Pattern Recognition Conference (CVPR)},
-    month     = {June},
-    year      = {2025},
-    pages     = {27649-27660}
-}
+This runs Phase 1 → barrier sync → queue init → Phase 2 → finalize automatically.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RANK` | (required) | Node ID (0-indexed) |
+| `NUM_MACHINES` | 20 | Total number of nodes |
+| `NUM_GPUS` | 8 | GPUs per node |
+| `NUM_WORKER_PER_GPU` | 4 | Workers per GPU (Phase 1); 1 recommended for Phase 2 |
+| `TASK_CONFIG` | demo_clean | Config file name in `task_config/` |
+| `BATCH_SIZE` | 5 | Episodes per queue batch (Phase 2) |
+| `TASK_FILTER` | (all) | Comma-separated task names to include |
+| `TASK_EXCLUDE` | (empty) | Comma-separated task names to exclude |
+| `CLUSTER_ID` | (empty) | Isolate barriers when multiple clusters share storage |
+
+### Run Phases Separately
+
+```bash
+# Phase 1 only
+RANK=0 bash multi_proc_scripts/launch_phase1.sh
+
+# After all nodes finish Phase 1, init queue (run on one node):
+python multi_proc_scripts/init_queue.py --task-config demo_clean --batch-size 5
+
+# Phase 2 only
+RANK=0 bash multi_proc_scripts/launch_phase2.sh
+
+# After all nodes finish Phase 2, generate instructions:
+bash multi_proc_scripts/finalize_tasks.sh demo_clean
 ```
 
-Benchmarking Generalizable Bimanual Manipulation: RoboTwin Dual-Arm Collaboration Challenge at CVPR 2025 MEIS Workshop
-```
-@article{chen2025benchmarking,
-  title={Benchmarking Generalizable Bimanual Manipulation: RoboTwin Dual-Arm Collaboration Challenge at CVPR 2025 MEIS Workshop},
-  author={Chen, Tianxing and Wang, Kaixuan and Yang, Zhaohui and Zhang, Yuhao and Chen, Zanxin and Chen, Baijun and Dong, Wanxi and Liu, Ziyuan and Chen, Dong and Yang, Tianshuo and others},
-  journal={arXiv preprint arXiv:2506.23351},
-  year={2025}
-}
-```
+### Single-Task Reverse Rendering
 
-<b>RoboTwin</b>: Dual-Arm Robot Benchmark with Generative Digital Twins (early version), accepted to <i style="color: red; display: inline;"><b>ECCV Workshop 2024 (Best Paper Award)</b></i>
-```
-@article{mu2024robotwin,
-  title={RoboTwin: Dual-Arm Robot Benchmark with Generative Digital Twins (early version)},
-  author={Mu, Yao and Chen, Tianxing and Peng, Shijia and Chen, Zanxin and Gao, Zeyu and Zou, Yude and Lin, Lunkai and Xie, Zhiqiang and Luo, Ping},
-  journal={arXiv preprint arXiv:2409.02920},
-  year={2024}
-}
+For rendering a specific episode range (e.g., episodes 5999→4000):
+
+```bash
+# Single GPU
+bash multi_proc_scripts/run_reverse.sh hanging_mug demo_clean --start 5999 --end 4000 --gpu 0
+
+# Multi-GPU (8 GPUs)
+bash multi_proc_scripts/run_reverse_multi.sh hanging_mug demo_clean --start 5999 --end 4000 --num-gpus 8
 ```
 
-# 😺 Acknowledgement
+## Monitoring
 
-**Software Support**: D-Robotics, **Hardware Support**: AgileX Robotics, **AIGC Support**: Deemos.
+```bash
+# Overall progress (counts video files)
+python multi_proc_scripts/monitor_progress.py --task-config demo_clean
 
-Contact [Tianxing Chen](https://tianxingchen.github.io) if you have any questions or suggestions.
+# Live refresh every 30s
+python multi_proc_scripts/monitor_progress.py --watch
 
-# 🏷️ License
-This repository is released under the MIT license. See [LICENSE](./LICENSE) for additional details.
+# List all tasks sorted by completion
+python multi_proc_scripts/monitor_progress.py --list --sort asc
+
+# Filter specific tasks
+python multi_proc_scripts/monitor_progress.py --task hanging_mug,lift_pot
+```
+
+## File Overview
+
+```
+multi_proc_scripts/
+├── launch_all.sh           # Full pipeline entry point (Phase 1 + 2 + finalize)
+├── launch_phase1.sh        # Phase 1 cluster entry point
+├── launch_phase2.sh        # Phase 2 cluster entry point
+├── run_phase1.sh           # Phase 1 per-node orchestrator
+├── run_phase2.sh           # Phase 2 per-node orchestrator
+├── phase1_worker.py        # Phase 1 single-worker process
+├── phase2_worker.py        # Phase 2 single-worker process (queue consumer)
+├── init_queue.py           # Generate Phase 2 queue files
+├── merge_seeds.py          # Merge Phase 1 worker outputs
+├── finalize_tasks.sh       # Post-Phase 2: merge scene_info + gen instructions
+├── gen_instructions.sh     # Per-task instruction generation with validation
+├── gen_all_instructions.sh # Batch instruction generation for all tasks
+├── run_reverse.sh          # Single-GPU reverse-order rendering
+├── run_reverse_multi.sh    # Multi-GPU reverse-order rendering
+├── monitor_progress.py     # Progress monitoring (file-count based)
+├── patch_curobo_warp.py    # CuRobo kernel patch for Hopper GPUs
+├── run_all.sh              # Legacy multi-task runner
+└── LESSONS_LEARNED.md      # Operational lessons from production runs
+
+script/
+└── collect_data.py         # Core data collection (Phase 1/2 modes)
+
+envs/robot/
+└── planner.py              # CuRobo motion planner (Hopper GPU fix)
+
+envs/utils/
+└── pkl2hdf5.py             # PKL→HDF5 conversion (cache cleanup)
+```
+
+## Key Design Decisions
+
+### Concurrency Safety
+
+| Resource | Strategy |
+|----------|----------|
+| Seed collection | Each worker uses independent seed range + output directory |
+| Trajectory data | Single-process merge after Phase 1 |
+| HDF5 files | Batch episodes don't overlap; existence check before write |
+| Scene info | Independent per-episode files, merged at finalize |
+| Queue files | `fcntl.flock` with `LOCK_NB` for non-blocking claims |
+
+### Hopper GPU (H100/H200) Compatibility
+
+CuRobo's LBFGS fused CUDA kernel causes illegal instruction errors on sm_90 (Hopper). The fix in `planner.py` disables only the problematic kernel while keeping CUDA graphs enabled:
+
+```python
+# After MotionGen creation:
+self._disable_lbfgs_cuda_kernel(self.motion_gen)
+```
+
+If CuRobo was compiled with PTX fallback (`sm_89+PTX`), recompile with native `sm_90` for 10-15x speedup. Use `patch_curobo_warp.py` to patch the warp kernel compilation.
+
+### Idempotent Rendering
+
+Every worker checks for existing `episode{N}.hdf5` before rendering. This means:
+- Crashed workers can be restarted without data loss
+- Stale batches reclaimed by other workers won't duplicate work
+- You can safely re-run any phase at any time
+
+## Task Configuration
+
+Edit `task_config/demo_clean.yml`:
+
+```yaml
+episode_num: 4000        # Episodes per task
+save_path: /mnt/data/clean  # Shared storage path
+# ... other settings
+```
+
+The 50 supported tasks are defined in `init_queue.py`.
+
+## Docker Setup
+
+Each node runs a Docker container with NVIDIA GPU passthrough. The container needs access to:
+- The RoboTwin code directory (mounted to `/mnt/robotwin`)
+- The shared data storage filesystem
+- All NVIDIA GPU devices
+
+### Container Launch
+
+```bash
+sudo docker run --gpus all \
+    -e NVIDIA_VISIBLE_DEVICES=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=all \
+    -v /home/ubuntu/proj/robotwin/RoboTwin:/mnt/robotwin \
+    -v /media/ubuntu/T7/lx/:/media/ubuntu/T7/lx/ \
+    -it <your-image> \
+    bash
+```
+
+Replace paths as needed:
+- First `-v`: mount RoboTwin code to `/mnt/robotwin` (must match CuRobo config paths)
+- Second `-v`: mount shared data storage (where `save_path` in task config points to)
+
+### Running Inside Container
+
+```bash
+cd /mnt/robotwin
+
+# Single machine, 1 GPU, 2 workers/GPU, batch_size=5
+RANK=0 NUM_MACHINES=1 NUM_WORKER_PER_GPU=2 NUM_GPUS=1 BATCH_SIZE=5 \
+    bash multi_proc_scripts/launch_all.sh
+
+# Single machine, 8 GPUs, full pipeline
+RANK=0 NUM_MACHINES=1 NUM_GPUS=8 NUM_WORKER_PER_GPU=2 BATCH_SIZE=5 \
+    bash multi_proc_scripts/launch_all.sh
+
+# Multi-machine (20 nodes), each node runs with its own RANK
+RANK=0 NUM_MACHINES=20 NUM_GPUS=8 NUM_WORKER_PER_GPU=4 BATCH_SIZE=5 \
+    bash multi_proc_scripts/launch_all.sh
+
+# Filter specific tasks
+RANK=0 NUM_MACHINES=1 NUM_GPUS=1 TASK_FILTER=hanging_mug,lift_pot \
+    bash multi_proc_scripts/launch_all.sh
+
+# Exclude tasks
+RANK=0 NUM_MACHINES=1 NUM_GPUS=8 TASK_EXCLUDE=open_laptop,scan_object \
+    bash multi_proc_scripts/launch_all.sh
+```
+
+### Multi-Machine Deployment
+
+On a 20-machine cluster, each node runs the same Docker image with a different `RANK`:
+
+```bash
+# Node 0
+sudo docker run --gpus all \
+    -e NVIDIA_VISIBLE_DEVICES=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=all \
+    -v /path/to/RoboTwin:/mnt/robotwin \
+    -v /mnt/shared-storage:/mnt/shared-storage \
+    -it <your-image> \
+    bash -c "cd /mnt/robotwin && RANK=0 NUM_MACHINES=20 NUM_GPUS=8 bash multi_proc_scripts/launch_all.sh"
+
+# Node 1
+# ... same command with RANK=1
+
+# Node 19
+# ... same command with RANK=19
+```
+
+All nodes must share the same `save_path` filesystem for queue coordination and data output.
+
+### Key Mount Points
+
+| Host Path | Container Path | Purpose |
+|-----------|---------------|---------|
+| RoboTwin code | `/mnt/robotwin` | Must match CuRobo YAML hardcoded paths |
+| Data storage | Same as `save_path` in config | Shared across all nodes |
+
+### CuRobo Asset Path Issue
+
+CuRobo YAML configs (`assets/embodiments/aloha-agilex/curobo_left.yml`, etc.) contain hardcoded absolute paths like:
+
+```yaml
+urdf_path: /mnt/robotwin/assets/embodiments/aloha-agilex/urdf/aloha_agilex_left.urdf
+```
+
+If your Docker mount path doesn't match, you'll get `FileNotFoundError`. Two fixes:
+
+1. **Mount to match** (recommended): `-v /path/to/robotwin:/mnt/robotwin`
+2. **Symlink**: `ln -sf /actual/path/assets /mnt/robotwin/assets`
+
+### NVIDIA Driver Conflicts in Docker
+
+If you see "failed to find a rendering device" (SAPIEN/Vulkan error), check for driver version mismatches:
+
+```bash
+# Inside container:
+ls /usr/lib/x86_64-linux-gnu/libcuda* | grep -v $(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1 | tr . _)
+```
+
+If there are library files from a different driver version than the host:
+
+```bash
+# Remove conflicting driver files (example for version 580.142 when host is 580.126):
+rm -f /usr/lib/x86_64-linux-gnu/*580.142*
+ldconfig
+```
+
+## Troubleshooting
+
+**Workers exit with "no pending batches"**
+- Normal if `TASK_FILTER`/`TASK_EXCLUDE` excludes all remaining work
+- Check queue: `cat <save_path>/_queue/<task>.json | python -m json.tool | grep status`
+- If you changed task filters, delete `_queue/` and re-run `init_queue.py`
+
+**Slow rendering (minutes per episode instead of seconds)**
+- Check CuRobo compilation target:
+  ```bash
+  python -c "
+  import curobo
+  import os
+  path = os.path.dirname(curobo.__file__)
+  # Look for compiled .so files and check their CUDA arch
+  import subprocess
+  sos = subprocess.check_output(f'find {path} -name \"*.so\"', shell=True).decode().split()
+  for so in sos[:3]:
+      out = subprocess.check_output(f'cuobjdump -lelf {so} 2>/dev/null | head -5', shell=True).decode()
+      if out: print(f'{os.path.basename(so)}: {out}')
+  "
+  ```
+- If you see `sm_89` (PTX fallback) on H100/H200, recompile CuRobo with `TORCH_CUDA_ARCH_LIST="9.0"`
+- Reduce `NUM_WORKER_PER_GPU` — GPU contention kills throughput (2+ workers/GPU on Phase 2 is usually slower than 1)
+
+**CuRobo "illegal instruction" on H100/H200 (Hopper)**
+- The LBFGS fused CUDA kernel crashes on sm_90
+- Fix is already in `planner.py` (`_disable_lbfgs_cuda_kernel`)
+- Verify: if you see `CUDA error: an illegal instruction was encountered` in CuRobo stack traces, this is the cause
+- `use_cuda_graph=True` is fine to keep enabled; only `use_cuda_kernel` needs to be False
+
+**Incomplete cache / pkl2hdf5 errors**
+- `pkl2hdf5.py` auto-cleans incomplete caches (missing sequential pkl files)
+- Manual fix: `rm -rf <save_path>/<task>/<config>/.cache`
+- This happens when a worker crashes mid-episode
+
+**AssertionError: Collect Error / check_success failures**
+- Phase 2 rendering may produce episodes where `check_success()` fails (physics divergence from seed collection)
+- `collect_data.py` logs a warning but saves the data anyway — this is intentional
+- If you see many failures for one task, the seed quality may be poor; re-run Phase 1
+
+**IndexError in play_once()**
+- Trajectory data mismatch for some episodes (pkl data doesn't match expected path length)
+- `collect_data.py` catches this and skips the episode with a warning
+- The episode will be missing from final output; re-check with `gen_instructions.sh --dry-run`
+
+**Barrier stuck (nodes waiting forever)**
+- Check `_barrier/` directory for missing node files
+- If a node crashed, manually `touch _barrier/phase1_node_N` to unblock others
+- Stale barrier from a previous run: delete `_barrier/` and restart all nodes together
+- Use `CLUSTER_ID` to avoid conflicts when running multiple clusters
+
+**Queue batch_size changes not taking effect**
+- `init_queue.py` skips tasks whose queue file already exists
+- Delete `_queue/` directory and re-run `init_queue.py` after changing `--batch-size`
+
+**scene_info.json missing entries after Phase 2**
+- Scene info is written as independent files in `_scene_info/episode_N.json`
+- Run `bash multi_proc_scripts/gen_instructions.sh <task> <config> --dry-run` to check consistency
+- `finalize_tasks.sh` merges them into `scene_info.json` automatically
+
+**TASK_EXCLUDE with multiple tasks**
+- Comma-separated, no spaces: `TASK_EXCLUDE=hanging_mug,lift_pot,open_laptop`
+
+## Performance Tuning
+
+| Setting | Phase 1 | Phase 2 |
+|---------|---------|---------|
+| `NUM_WORKER_PER_GPU` | 2-4 (CPU-bound seed search) | 1 (GPU-bound rendering) |
+| `BATCH_SIZE` | N/A | 5-10 (smaller = better load balance, more lock overhead) |
+| Expected throughput | Varies by task complexity | ~60-180 ep/hour/GPU (single worker) |
+
+Tips:
+- Phase 2 is GPU-bound; adding more workers per GPU causes contention and slows everything down
+- Phase 1 is more CPU-bound (planning); 2-4 workers/GPU can help
+- Different tasks have very different rendering times; the queue system handles this naturally
+- Monitor with `--watch` to get real-time throughput (ep/h) and ETA
+
+## Requirements
+
+- Python 3.8+
+- PyYAML
+- SAPIEN (robotics simulator)
+- CuRobo (motion planning, compiled for target GPU arch)
+- NVIDIA GPUs with CUDA support
+- NVIDIA Container Toolkit (for Docker GPU passthrough)
+- Shared filesystem (NFS, Lustre, etc.) accessible from all nodes
+- Docker (recommended for reproducible environments)

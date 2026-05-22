@@ -103,6 +103,9 @@ def process_folder_to_hdf5_video(folder_path, hdf5_path, video_path):
     for f in pkl_files:
         num = int(os.path.basename(f)[:-4])
         if num != expected:
+            import shutil
+            print(f"[WARN] Incomplete cache (missing {expected}.pkl), clearing: {folder_path}")
+            shutil.rmtree(folder_path)
             raise ValueError(f"Missing file {expected}.pkl")
         expected += 1
 

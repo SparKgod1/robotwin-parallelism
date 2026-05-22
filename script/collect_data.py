@@ -10,6 +10,7 @@ from envs import *
 import yaml
 import importlib
 import json
+import fcntl
 import traceback
 import os
 import time
@@ -36,13 +37,27 @@ def get_embodiment_config(robot_file):
     return embodiment_args
 
 
-def main(task_name=None, task_config=None):
+def main(task_name=None, task_config=None, start_seed_override=None, phase=None, episodes=None):
 
     task = class_decorator(task_name)
     config_path = f"./task_config/{task_config}.yml"
 
     with open(config_path, "r", encoding="utf-8") as f:
         args = yaml.load(f.read(), Loader=yaml.FullLoader)
+
+    if start_seed_override is not None:
+        args["start_seed"] = start_seed_override
+
+    if phase == 1:
+        args["collect_data"] = False
+    elif phase == 2:
+        args["use_seed"] = True
+        args["collect_data"] = True
+
+    if episodes is not None:
+        args["episode_list"] = episodes
+
+    args["_skip_postprocess"] = (phase == 2)
 
     args['task_name'] = task_name
 
@@ -104,7 +119,7 @@ def main(task_name=None, task_config=None):
 
 
 def run(TASK_ENV, args):
-    epid, suc_num, fail_num, seed_list = 0, 0, 0, []
+    epid, suc_num, fail_num, seed_list = args.get("start_seed", 0), 0, 0, []
 
     print(f"Task Name: \033[34m{args['task_name']}\033[0m")
 
@@ -114,6 +129,7 @@ def run(TASK_ENV, args):
     if not args["use_seed"]:
         print("\033[93m" + "[Start Seed and Pre Motion Data Collection]" + "\033[0m")
         args["need_plan"] = True
+        seed_collect_start_time = time.time()
 
         if os.path.exists(os.path.join(args["save_path"], "seed.txt")):
             with open(os.path.join(args["save_path"], "seed.txt"), "r") as file:
@@ -134,6 +150,9 @@ def run(TASK_ENV, args):
                     seed_list.append(epid)
                     TASK_ENV.save_traj_data(suc_num)
                     suc_num += 1
+                    if suc_num % 30 == 0:
+                        elapsed = time.time() - seed_collect_start_time
+                        print(f"[Progress] {suc_num}/{args['episode_num']} done, avg {elapsed/suc_num:.1f}s per episode")
                 else:
                     print(f"simulate data episode {suc_num} fail! (seed = {epid})")
                     fail_num += 1
@@ -154,6 +173,7 @@ def run(TASK_ENV, args):
                     TASK_ENV.viewer.close()
                 time.sleep(0.3)
             except Exception as e:
+                traceback.print_exc()
                 # stack_trace = traceback.format_exc()
                 print(" -------------")
                 print(f"simulate data episode {suc_num} fail! (seed = {epid})")
@@ -173,6 +193,8 @@ def run(TASK_ENV, args):
                     file.write("%s " % sed)
 
         print(f"\nComplete simulation, failed \033[91m{fail_num}\033[0m times / {epid} tries \n")
+        with open(os.path.join(args["save_path"], ".last_seed"), "w") as file:
+            file.write(str(epid))
     else:
         print("\033[93m" + "Use Saved Seeds List".center(30, "-") + "\033[0m")
         with open(os.path.join(args["save_path"], "seed.txt"), "r") as file:
@@ -190,16 +212,28 @@ def run(TASK_ENV, args):
 
         clear_cache_freq = args["clear_cache_freq"]
 
-        st_idx = 0
+        episode_list = args.get("episode_list")
+        if episode_list is not None:
+            def exist_hdf5(idx):
+                file_path = os.path.join(args["save_path"], 'data', f'episode{idx}.hdf5')
+                return os.path.exists(file_path)
+            iterate_episodes = [ep for ep in episode_list if not exist_hdf5(ep)]
+            if len(iterate_episodes) < len(episode_list):
+                skipped = len(episode_list) - len(iterate_episodes)
+                print(f"Skipping {skipped} already-rendered episodes")
+        else:
+            st_idx = 0
 
-        def exist_hdf5(idx):
-            file_path = os.path.join(args["save_path"], 'data', f'episode{idx}.hdf5')
-            return os.path.exists(file_path)
+            def exist_hdf5(idx):
+                file_path = os.path.join(args["save_path"], 'data', f'episode{idx}.hdf5')
+                return os.path.exists(file_path)
 
-        while exist_hdf5(st_idx):
-            st_idx += 1
+            while exist_hdf5(st_idx):
+                st_idx += 1
 
-        for episode_idx in range(st_idx, args["episode_num"]):
+            iterate_episodes = range(st_idx, args["episode_num"])
+
+        for episode_idx in iterate_episodes:
             print(f"\033[34mTask name: {args['task_name']}\033[0m")
 
             TASK_ENV.setup_demo(now_ep_num=episode_idx, seed=seed_list[episode_idx], **args)
@@ -209,28 +243,24 @@ def run(TASK_ENV, args):
             args["right_joint_path"] = traj_data["right_joint_path"]
             TASK_ENV.set_path_lst(args)
 
-            info_file_path = os.path.join(args["save_path"], "scene_info.json")
-
-            if not os.path.exists(info_file_path):
-                with open(info_file_path, "w", encoding="utf-8") as file:
-                    json.dump({}, file, ensure_ascii=False)
-
-            with open(info_file_path, "r", encoding="utf-8") as file:
-                info_db = json.load(file)
-
             info = TASK_ENV.play_once()
-            info_db[f"episode_{episode_idx}"] = info
 
-            with open(info_file_path, "w", encoding="utf-8") as file:
-                json.dump(info_db, file, ensure_ascii=False, indent=4)
+            scene_info_dir = os.path.join(args["save_path"], "_scene_info")
+            os.makedirs(scene_info_dir, exist_ok=True)
+            info_part_path = os.path.join(scene_info_dir, f"episode_{episode_idx}.json")
+            tmp_path = info_part_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(info, f, ensure_ascii=False)
+            os.rename(tmp_path, info_part_path)
 
             TASK_ENV.close_env(clear_cache=((episode_idx + 1) % clear_cache_freq == 0))
             TASK_ENV.merge_pkl_to_hdf5_video()
             TASK_ENV.remove_data_cache()
             assert TASK_ENV.check_success(), "Collect Error"
 
-        command = f"cd description && bash gen_episode_instructions.sh {args['task_name']} {args['task_config']} {args['language_num']}"
-        os.system(command)
+        if not args.get("_skip_postprocess"):
+            command = f"cd description && bash gen_episode_instructions.sh {args['task_name']} {args['task_config']} {args['language_num']}"
+            os.system(command)
 
 
 if __name__ == "__main__":
@@ -243,8 +273,16 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("task_name", type=str)
     parser.add_argument("task_config", type=str)
+    parser.add_argument("--start-seed", type=int, default=None)
+    parser.add_argument("--phase", type=int, choices=[1, 2], default=None)
+    parser.add_argument("--episodes", type=str, default=None,
+                        help="Comma-separated episode indices for Phase 2")
     parser = parser.parse_args()
-    task_name = parser.task_name
-    task_config = parser.task_config
 
-    main(task_name=task_name, task_config=task_config)
+    episode_list = None
+    if parser.episodes:
+        episode_list = [int(x) for x in parser.episodes.split(",")]
+
+    main(task_name=parser.task_name, task_config=parser.task_config,
+         start_seed_override=parser.start_seed, phase=parser.phase,
+         episodes=episode_list)

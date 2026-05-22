@@ -21,6 +21,8 @@ try:
         MotionGenPlanConfig,
         PoseCostMetric,
     )
+    from curobo.wrap.reacher.trajopt import TrajOptSolver
+    from curobo.opt.newton.lbfgs import LBFGSOpt
     from curobo.util import logger
     import torch
     import yaml
@@ -79,6 +81,7 @@ try:
             )
 
             self.motion_gen = MotionGen(motion_gen_config)
+            self._disable_lbfgs_cuda_kernel(self.motion_gen)
             self.motion_gen.warmup()
             motion_gen_config = MotionGenConfig.load_from_robot_config(
                 self.yml_path,
@@ -88,7 +91,28 @@ try:
                 num_graph_seeds=1,
             )
             self.motion_gen_batch = MotionGen(motion_gen_config)
+            self._disable_lbfgs_cuda_kernel(self.motion_gen_batch)
             self.motion_gen_batch.warmup(batch=CONFIGS.ROTATE_NUM)
+
+        @staticmethod
+        def _disable_lbfgs_cuda_kernel(motion_gen):
+            """Disable LBFGS fused CUDA kernel to avoid illegal instruction on Hopper (sm_90)."""
+            solvers = [
+                getattr(motion_gen, 'trajopt_solver', None),
+                getattr(motion_gen, 'ik_solver', None),
+                getattr(motion_gen, 'finetune_trajopt_solver', None),
+                getattr(motion_gen, 'js_trajopt_solver', None),
+                getattr(motion_gen, 'finetune_js_trajopt_solver', None),
+            ]
+            for trajopt in solvers:
+                if trajopt is None:
+                    continue
+                solver = getattr(trajopt, 'solver', None)
+                if solver is None:
+                    continue
+                newton_opt = getattr(solver, 'newton_optimizer', None)
+                if newton_opt is not None and hasattr(newton_opt, 'use_cuda_kernel'):
+                    newton_opt.use_cuda_kernel = False
 
         def plan_path(
             self,
@@ -96,7 +120,7 @@ try:
             target_gripper_pose,
             constraint_pose=None,
             arms_tag=None,
-        ):  
+        ):
             world_base_pose = np.concatenate([
                 np.array(self.robot_origion_pose.p),
                 np.array(self.robot_origion_pose.q),

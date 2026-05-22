@@ -138,7 +138,10 @@ def load_task_instructions(task_name: str) -> Dict[str, Any]:
 
 def load_scene_info(task_name: str, setting: str, scene_info_path: str) -> Dict[str, Dict]:
     """Load the scene info from the JSON file in the data directory."""
-    file_path = os.path.join(parent_directory, f"../../{scene_info_path}/{task_name}/{setting}/scene_info.json")
+    if os.path.isabs(scene_info_path):
+        file_path = os.path.join(scene_info_path, task_name, setting, "scene_info.json")
+    else:
+        file_path = os.path.join(parent_directory, f"../../{scene_info_path}/{task_name}/{setting}/scene_info.json")
     try:
         with open(file_path, "r") as f:
             scene_data = json.load(f)
@@ -151,25 +154,30 @@ def load_scene_info(task_name: str, setting: str, scene_info_path: str) -> Dict[
         exit(1)
 
 
-def extract_episodes_from_scene_info(scene_info: Dict) -> List[Dict[str, str]]:
-    """Extract episode parameters from scene_info."""
+def extract_episodes_from_scene_info(scene_info: Dict) -> List[tuple]:
+    """Extract episode parameters from scene_info. Returns list of (episode_key, params)."""
     episodes = []
     for episode_key, episode_data in scene_info.items():
         if "info" in episode_data:
-            episodes.append(episode_data["info"])
+            episodes.append((episode_key, episode_data["info"]))
         else:
-            episodes.append(dict())
+            episodes.append((episode_key, dict()))
     return episodes
 
 
-def save_episode_descriptions(task_name: str, setting: str, generated_descriptions: List[Dict]):
+def save_episode_descriptions(task_name: str, setting: str, generated_descriptions: List[Dict], save_path: str = None):
     """Save generated descriptions to output files."""
-    output_dir = os.path.join(parent_directory, f"../../data/{task_name}/{setting}/instructions")
+    if save_path and os.path.isabs(save_path):
+        output_dir = os.path.join(save_path, task_name, setting, "instructions")
+    else:
+        output_dir = os.path.join(parent_directory, f"../../data/{task_name}/{setting}/instructions")
     os.makedirs(output_dir, exist_ok=True)
 
     for episode_desc in generated_descriptions:
-        episode_index = episode_desc["episode_index"]
-        output_file = os.path.join(output_dir, f"episode{episode_index}.json")
+        # episode_key is like "episode_4558", output as "episode4558.json"
+        episode_key = episode_desc["episode_key"]
+        filename = episode_key.replace("episode_", "episode") + ".json"
+        output_file = os.path.join(output_dir, filename)
 
         with open(output_file, "w") as f:
             json.dump(
@@ -180,8 +188,9 @@ def save_episode_descriptions(task_name: str, setting: str, generated_descriptio
                 f,
                 indent=2,
             )
+    print(f"Saved {len(generated_descriptions)} episode instructions to {output_dir}")
 
-def generate_episode_descriptions(task_name: str, episodes: List[Dict[str, str]], max_descriptions: int = 1000000):
+def generate_episode_descriptions(task_name: str, episodes: List[tuple], max_descriptions: int = 1000000):
     """
     Generate descriptions for episodes by replacing placeholders in instructions with parameter values.
     For each episode, filter instructions that have matching placeholders and generate up to
@@ -197,20 +206,20 @@ def generate_episode_descriptions(task_name: str, episodes: List[Dict[str, str]]
     all_generated_descriptions = []
 
     # Process each episode
-    for i, episode in enumerate(episodes):
+    for episode_key, episode in episodes:
         # Filter instructions that have all placeholders matching episode parameters
         filtered_seen_instructions = filter_instructions(seen_instructions, episode)
         filtered_unseen_instructions = filter_instructions(unseen_instructions, episode)
 
         if filtered_seen_instructions == [] and filtered_unseen_instructions == []:
-            print(f"Episode {i}: No valid instructions found")
+            print(f"{episode_key}: No valid instructions found")
             continue
 
         # Generate seen descriptions by replacing placeholders
         seen_episode_descriptions = []
         flag_seen = True
         while (len(seen_episode_descriptions) < max_descriptions and flag_seen and filtered_seen_instructions):
-            
+
             for instruction in filtered_seen_instructions:
                 if len(seen_episode_descriptions) >= max_descriptions:
                     flag_seen = False
@@ -230,7 +239,7 @@ def generate_episode_descriptions(task_name: str, episodes: List[Dict[str, str]]
                 unseen_episode_descriptions.append(description)
 
         all_generated_descriptions.append({
-            "episode_index": i,
+            "episode_key": episode_key,
             "seen": seen_episode_descriptions,
             "unseen": unseen_episode_descriptions,
         })
@@ -256,21 +265,41 @@ if __name__ == "__main__":
         default=100,
         help="Maximum number of descriptions per episode",
     )
+    parser.add_argument(
+        "--save_path",
+        type=str,
+        default=None,
+        help="Absolute path to data root (overrides config file)",
+    )
+    parser.add_argument(
+        "--project_dir",
+        type=str,
+        default=None,
+        help="Absolute path to RoboTwin project root (overrides relative paths)",
+    )
 
     args = parser.parse_args()
-    setting_file = os.path.join(
-        parent_directory, f"../../task_config/{args.setting}.yml"
-    )
-    with open(setting_file, "r", encoding="utf-8") as f:
-        args_dict = yaml.load(f.read(), Loader=yaml.FullLoader)
+
+    if args.project_dir:
+        parent_directory = os.path.join(args.project_dir, "description", "utils")
+
+    if args.save_path:
+        save_path = args.save_path
+    else:
+        setting_file = os.path.join(
+            parent_directory, f"../../task_config/{args.setting}.yml"
+        )
+        with open(setting_file, "r", encoding="utf-8") as f:
+            args_dict = yaml.load(f.read(), Loader=yaml.FullLoader)
+        save_path = args_dict['save_path']
 
     # Load scene info and extract episode parameters
-    scene_info = load_scene_info(args.task_name, args.setting, args_dict['save_path'])
+    scene_info = load_scene_info(args.task_name, args.setting, save_path)
     episodes = extract_episodes_from_scene_info(scene_info)
 
     # Generate descriptions
     results = generate_episode_descriptions(args.task_name, episodes, args.max_num)
 
     # Save results to output files
-    save_episode_descriptions(args.task_name, args.setting, results)
+    save_episode_descriptions(args.task_name, args.setting, results, save_path)
     print("Successfully Saved Instructions")
