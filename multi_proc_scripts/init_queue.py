@@ -40,7 +40,6 @@ def main():
         config = yaml.load(f.read(), Loader=yaml.FullLoader)
 
     save_path = config["save_path"]
-    episode_num = config["episode_num"]
     batch_size = args.batch_size
 
     if args.task_filter:
@@ -61,6 +60,7 @@ def main():
     for task_name in task_list:
         task_dir = os.path.join(save_path, task_name, args.task_config)
         seed_file = os.path.join(task_dir, "seed.txt")
+        traj_dir = os.path.join(task_dir, "_traj_data")
 
         if not os.path.exists(seed_file):
             errors.append(f"{task_name}: seed.txt not found")
@@ -69,8 +69,19 @@ def main():
         with open(seed_file, "r") as f:
             seeds = [int(s) for s in f.read().split() if s.strip()]
 
-        if len(seeds) < episode_num:
-            errors.append(f"{task_name}: only {len(seeds)}/{episode_num} seeds")
+        if not seeds:
+            errors.append(f"{task_name}: seed.txt is empty")
+            continue
+
+        # 只排有 traj 数据的 episode
+        available_episodes = []
+        for idx in range(len(seeds)):
+            pkl_path = os.path.join(traj_dir, f"episode{idx}.pkl")
+            if os.path.exists(pkl_path):
+                available_episodes.append(idx)
+
+        if not available_episodes:
+            errors.append(f"{task_name}: no _traj_data/episode*.pkl found")
             continue
 
         queue_file = os.path.join(queue_dir, f"{task_name}.json")
@@ -79,33 +90,33 @@ def main():
         if os.path.exists(queue_file):
             with open(queue_file, "r") as f:
                 existing_queue = json.load(f)
-            old_total = existing_queue["total_episodes"]
-            if old_total >= episode_num:
+            old_episodes = set()
+            for batch in existing_queue["batches"]:
+                old_episodes.update(batch["episodes"])
+            new_episodes = [ep for ep in available_episodes if ep not in old_episodes]
+            if not new_episodes:
                 skipped += 1
                 continue
-            # 扩容：追加新 batch 覆盖 old_total ~ episode_num
             new_batches = []
-            for start in range(old_total, episode_num, batch_size):
-                end = min(start + batch_size, episode_num)
+            for i in range(0, len(new_episodes), batch_size):
                 new_batches.append({
-                    "episodes": list(range(start, end)),
+                    "episodes": new_episodes[i:i + batch_size],
                     "status": "pending",
                     "worker": None,
                     "claimed_at": None,
                 })
             existing_queue["batches"].extend(new_batches)
-            existing_queue["total_episodes"] = episode_num
+            existing_queue["total_episodes"] = len(old_episodes) + len(new_episodes)
             with open(queue_file, "w") as f:
                 json.dump(existing_queue, f, indent=2)
             created += 1
-            print(f"[EXPAND] {task_name}: added {len(new_batches)} batches ({old_total}->{episode_num})")
+            print(f"[EXPAND] {task_name}: added {len(new_batches)} batches ({len(new_episodes)} new episodes)")
             continue
 
         batches = []
-        for start in range(0, episode_num, batch_size):
-            end = min(start + batch_size, episode_num)
+        for i in range(0, len(available_episodes), batch_size):
             batches.append({
-                "episodes": list(range(start, end)),
+                "episodes": available_episodes[i:i + batch_size],
                 "status": "pending",
                 "worker": None,
                 "claimed_at": None,
@@ -114,7 +125,7 @@ def main():
         queue_data = {
             "task_name": task_name,
             "task_config": args.task_config,
-            "total_episodes": episode_num,
+            "total_episodes": len(available_episodes),
             "batches": batches,
         }
 
@@ -122,7 +133,7 @@ def main():
             json.dump(queue_data, f, indent=2)
 
         created += 1
-        print(f"[OK] {task_name}: {len(batches)} batches")
+        print(f"[OK] {task_name}: {len(batches)} batches ({len(available_episodes)} episodes)")
 
     if errors:
         print("\n[ERRORS]")
@@ -130,8 +141,7 @@ def main():
             print(f"  {e}")
         sys.exit(1)
     else:
-        print(f"\nQueue: {created} created, {skipped} already existed (preserved). "
-              f"{episode_num // batch_size} batches per task.")
+        print(f"\nQueue: {created} created, {skipped} already existed (preserved).")
 
 
 if __name__ == "__main__":

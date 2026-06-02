@@ -233,30 +233,39 @@ def run(TASK_ENV, args):
 
             iterate_episodes = range(st_idx, args["episode_num"])
 
+        failed_episodes = []
         for episode_idx in iterate_episodes:
             print(f"\033[34mTask name: {args['task_name']}\033[0m")
 
-            TASK_ENV.setup_demo(now_ep_num=episode_idx, seed=seed_list[episode_idx], **args)
+            try:
+                TASK_ENV.setup_demo(now_ep_num=episode_idx, seed=seed_list[episode_idx], **args)
 
-            traj_data = TASK_ENV.load_tran_data(episode_idx)
-            args["left_joint_path"] = traj_data["left_joint_path"]
-            args["right_joint_path"] = traj_data["right_joint_path"]
-            TASK_ENV.set_path_lst(args)
+                traj_data = TASK_ENV.load_tran_data(episode_idx)
+                args["left_joint_path"] = traj_data["left_joint_path"]
+                args["right_joint_path"] = traj_data["right_joint_path"]
+                TASK_ENV.set_path_lst(args)
 
-            info = TASK_ENV.play_once()
+                info = TASK_ENV.play_once()
 
-            scene_info_dir = os.path.join(args["save_path"], "_scene_info")
-            os.makedirs(scene_info_dir, exist_ok=True)
-            info_part_path = os.path.join(scene_info_dir, f"episode_{episode_idx}.json")
-            tmp_path = info_part_path + ".tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(info, f, ensure_ascii=False)
-            os.rename(tmp_path, info_part_path)
+                scene_info_dir = os.path.join(args["save_path"], "_scene_info")
+                os.makedirs(scene_info_dir, exist_ok=True)
+                info_part_path = os.path.join(scene_info_dir, f"episode_{episode_idx}.json")
+                tmp_path = info_part_path + ".tmp"
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump(info, f, ensure_ascii=False)
+                os.rename(tmp_path, info_part_path)
 
-            TASK_ENV.close_env(clear_cache=((episode_idx + 1) % clear_cache_freq == 0))
-            TASK_ENV.merge_pkl_to_hdf5_video()
-            TASK_ENV.remove_data_cache()
-            assert TASK_ENV.check_success(), "Collect Error"
+                TASK_ENV.close_env(clear_cache=((episode_idx + 1) % clear_cache_freq == 0))
+                TASK_ENV.merge_pkl_to_hdf5_video()
+                TASK_ENV.remove_data_cache()
+                assert TASK_ENV.check_success(), "Collect Error"
+            except Exception as e:
+                print(f"\033[91m[ERROR] Episode {episode_idx} failed: {e}\033[0m")
+                failed_episodes.append(episode_idx)
+                continue
+
+        if failed_episodes:
+            print(f"\033[93m[WARN] Failed episodes: {failed_episodes}\033[0m")
 
         if not args.get("_skip_postprocess"):
             command = f"cd description && bash gen_episode_instructions.sh {args['task_name']} {args['task_config']} {args['language_num']}"
